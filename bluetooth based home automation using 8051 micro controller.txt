@@ -1,0 +1,82 @@
+Header file and Port Configuration
+#include <reg51.h>
+void UART_Init();
+void UART_TxChar(char);
+char UART_RxChar();
+void UART_SendString(char *);
+
+
+sbit Lamp =P2^0;
+sbit Fan  =P2^1;
+
+UART Initialization
+void UART_Init()
+{
+	TMOD = 0x20;
+	TH1 = 0xFD;
+	SCON = 0x50;
+	TR1 = 1;
+}
+
+UART  Transmit and Receive
+void UART_TxChar(char Data)
+{
+	SBUF = Data;
+	while (TI==0);
+	TI = 0;
+}
+
+char UART_RxChar()
+{
+	char dat;
+	while (RI==0);
+	RI = 0;
+	dat = SBUF;
+	return(dat);
+}
+
+Transmit String
+void UART_SendString(char *str)
+{
+     int i;
+     for(i=0;str[i]!=0;i++)
+		{
+         UART_TxChar(str[i]);
+    }
+}
+void main()
+{
+	char Data_in;
+	UART_Init();					/* initialize UART Tx=P3^0 and Rx=P3^1 */
+	P2 = 0;					/* clear port initially     */
+	Lamp = 1;   				 	/* initially Lamp turn OFF  */
+	Fan = 1;   					/* initially Fan turn OFF   */
+		
+	while(1)
+	{
+		Data_in = UART_RxChar();			/* receive char serially */
+		UART_TxChar(Data_in);
+		if(Data_in == ‘1')
+		{
+		  Lamp = 1;		      /* turn ON LED */
+		  UART_SendString("Lamp_ON");	/* send status of LED*/
+		}
+		else if(Data_in == ‘2')
+		{
+		  Lamp=0;    /* turn OFF Lamp */
+	                                    UART_SendString("Lamp_OFF");	/* send status of Lamp*/
+		}
+		else if(Data_in == ‘3’)
+		{
+		  Fan = 1; 		      /* turn ON Fan */
+		  UART_SendString("Fan_ON");	/* send status of Fan*/
+		}
+		else if(Data_in == ‘4')
+		{
+		  Fan=0;	          /* turn OFF LED */
+		  UART_SendString("Fan_OFF");	/* send status of LED*/
+		}
+		else
+		{
+		UART_SendString("Select proper option");  /* send msg to select proper option */	
+		}
